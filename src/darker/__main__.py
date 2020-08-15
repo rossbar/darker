@@ -12,6 +12,7 @@ from darker.command_line import ISORT_INSTRUCTION, parse_command_line
 from darker.config import dump_config
 from darker.diff import diff_and_get_opcodes, opcodes_to_chunks
 from darker.git import EditedLinenumsDiffer, RevisionRange, git_get_modified_files
+from darker.highlighting import colorize
 from darker.import_sorting import apply_isort, isort
 from darker.linting import run_linter
 from darker.utils import TextDocument, get_common_root
@@ -155,18 +156,7 @@ def print_diff(path: Path, old: TextDocument, new: TextDocument) -> None:
         line.rstrip("\n")
         for line in unified_diff(old.lines, new.lines, relative_path, relative_path)
     )
-
-    if sys.stdout.isatty():
-        try:
-            from pygments import highlight
-            from pygments.formatters import TerminalFormatter
-            from pygments.lexers import DiffLexer
-        except ImportError:
-            print(diff)
-        else:
-            print(highlight(diff, DiffLexer(), TerminalFormatter()))
-    else:
-        print(diff)
+    print(colorize(diff, "diff"))
 
 
 def main(argv: List[str] = None) -> int:
