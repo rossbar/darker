@@ -61,7 +61,10 @@ def git_get_content_at_revision(path: Path, revision: str, cwd: Path) -> TextDoc
     cmd = ["git", "show", f"{revision}:./{path}"]
     logger.debug("[%s]$ %s", cwd, " ".join(cmd))
     try:
-        return TextDocument.from_str(check_output(cmd, cwd=str(cwd), encoding="utf-8"))
+        return TextDocument.from_str(
+            check_output(cmd, cwd=str(cwd), encoding="utf-8"),
+            git_get_mtime_at_commit(path, revision, cwd),
+        )
     except CalledProcessError as exc_info:
         if exc_info.returncode == 128:
             # The file didn't exist at the given revision. Act as if it was an empty
@@ -144,7 +147,7 @@ def _git_check_output_lines(cmd: List[str], cwd: Path) -> List[str]:
     """Log command line, run Git, split stdout to lines, exit with 123 on error"""
     logger.debug("[%s]$ %s", cwd, " ".join(cmd))
     try:
-        return check_output(cmd, cwd=str(cwd)).decode("utf-8").splitlines()
+        return check_output(cmd, cwd=str(cwd), encoding="utf-8").splitlines()
     except CalledProcessError as exc_info:
         if exc_info.returncode == 128:
             # Bad revision or another Git failure
@@ -213,9 +216,7 @@ class EditedLinenumsDiffer:
     @lru_cache(maxsize=1)
     def compare_revisions(self, path_in_repo: Path, context_lines: int) -> List[int]:
         """Return numbers of lines changed between a given revision and the worktree"""
-        content = git_get_content_at_revision(
-            path_in_repo, self.revrange.rev2, self.git_root
-        )
+        content = TextDocument.from_file(self.git_root / path_in_repo)
         return self.revision_vs_lines(path_in_repo, content, context_lines)
 
     def revision_vs_lines(

@@ -2,6 +2,7 @@
 
 import logging
 import sys
+from datetime import datetime
 from difflib import unified_diff
 from pathlib import Path
 from typing import Generator, Iterable, List, Tuple
@@ -14,7 +15,7 @@ from darker.diff import diff_and_get_opcodes, opcodes_to_chunks
 from darker.git import EditedLinenumsDiffer, RevisionRange, git_get_modified_files
 from darker.import_sorting import apply_isort, isort
 from darker.linting import run_linter
-from darker.utils import TextDocument, get_common_root
+from darker.utils import GIT_DATEFORMAT, TextDocument, get_common_root
 from darker.verification import NotEquivalentError, verify_ast_unchanged
 
 logger = logging.getLogger(__name__)
@@ -65,7 +66,7 @@ def format_edited_parts(
 
     for path_in_repo in sorted(changed_files):
         src = git_root / path_in_repo
-        worktree_content = TextDocument.from_str(src.read_text())
+        worktree_content = TextDocument.from_file(src)
 
         # 1. run isort
         if enable_isort:
@@ -101,7 +102,8 @@ def format_edited_parts(
 
             # 7. choose reformatted content
             chosen = TextDocument.from_lines(
-                choose_lines(black_chunks, edited_linenums)
+                choose_lines(black_chunks, edited_linenums),
+                mtime=datetime.utcnow().strftime(GIT_DATEFORMAT),
             )
 
             # 8. verify
