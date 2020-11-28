@@ -15,7 +15,7 @@ from darker.git import EditedLinenumsDiffer, RevisionRange, git_get_modified_fil
 from darker.import_sorting import apply_isort, isort
 from darker.linting import run_linter
 from darker.utils import TextDocument, get_common_root
-from darker.verification import NotEquivalentError, verify_ast_unchanged
+from darker.verification import BinarySearch, NotEquivalentError, verify_ast_unchanged
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ def format_edited_parts(
     8. verify that the resulting reformatted source code parses to an identical AST as
        the original edited to-file
     9. write the reformatted source back to the original file
-    10. run linter subprocesses for all edited files (11.-14. optional)
+    10. run linter subprocesses for all edited files (10.-13. optional)
     11. diff the given revision and worktree (after isort and Black reformatting) for
         each file reported by a linter
     12. extract line numbers in each file reported by a linter for changed lines
@@ -78,7 +78,16 @@ def format_edited_parts(
         else:
             edited = worktree_content
         max_context_lines = len(edited.lines)
-        for context_lines in range(max_context_lines + 1):
+        minimum_context_lines = BinarySearch(0, max_context_lines + 1)
+        last_successful_reformat = None
+        while not minimum_context_lines.found:
+            context_lines = minimum_context_lines.get_next()
+            if context_lines > 0:
+                logger.warning(
+                    "Trying with %s lines of context for `git diff -U %s`",
+                    context_lines,
+                    src,
+                )
             # 2. diff the given revision and worktree for the file
             # 3. extract line numbers in the edited to-file for changed lines
             edited_linenums = edited_linenums_differ.revision_vs_lines(
@@ -118,22 +127,27 @@ def format_edited_parts(
                 # a partially re-formatted Python file which produces an identical AST.
                 # Try again with a larger `-U<context_lines>` option for `git diff`,
                 # or give up if `context_lines` is already very large.
-                if context_lines == max_context_lines:
-                    raise
-                logger.debug(
-                    "AST verification failed. "
-                    "Trying again with %s lines of context for `git diff -U`",
-                    context_lines + 1,
+                logger.warning(
+                    "AST verification of %s with %s lines of context failed",
+                    src,
+                    context_lines,
                 )
-                continue
+                minimum_context_lines.respond(False)
             else:
-                # 9. A re-formatted Python file which produces an identical AST was
-                #    created successfully - write an updated file or print the diff if
-                #    there were any changes to the original
-                if chosen != worktree_content:
-                    yield src, worktree_content, chosen
-                break
-    # 10. run linter subprocesses for all edited files (11.-14. optional)
+                minimum_context_lines.respond(True)
+                last_successful_reformat = (src, worktree_content, chosen)
+        if not last_successful_reformat:
+            raise NotEquivalentError(path_in_repo)
+        # 9. A re-formatted Python file which produces an identical AST was
+        #    created successfully - write an updated file or print the diff if
+        #    there were any changes to the original
+        src, worktree_content, chosen = last_successful_reformat
+        if chosen != worktree_content:
+            # `result_str` is just `chosen_lines` concatenated with newlines.
+            # We need both forms when showing diffs or modifying files.
+            # Pass them both on to avoid back-and-forth conversion.
+            yield src, worktree_content, chosen
+    # 10. run linter subprocesses for all edited files (10.-13. optional)
     # 11. diff the given revision and worktree (after isort and Black reformatting) for
     #     each file reported by a linter
     # 12. extract line numbers in each file reported by a linter for changed lines
