@@ -5,17 +5,27 @@
 |travis-badge|_ |license-badge|_ |pypi-badge|_ |downloads-badge|_ |black-badge|_ |changelog-badge|_
 
 .. |travis-badge| image:: https://travis-ci.com/akaihola/darker.svg?branch=master
+   :alt: master branch build status
 .. _travis-badge: https://travis-ci.com/akaihola/darker
 .. |license-badge| image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
+   :alt: BSD 3 Clause license
 .. _license-badge: https://github.com/akaihola/darker/blob/master/LICENSE.rst
 .. |pypi-badge| image:: https://img.shields.io/pypi/v/darker
+   :alt: Latest release on PyPI
 .. _pypi-badge: https://pypi.org/project/darker/
 .. |downloads-badge| image:: https://pepy.tech/badge/darker
+   :alt: Number of downloads
 .. _downloads-badge: https://pepy.tech/project/darker
 .. |black-badge| image:: https://img.shields.io/badge/code%20style-black-000000.svg
+   :alt: Source code formatted using Black
 .. _black-badge: https://github.com/psf/black
 .. |changelog-badge| image:: https://img.shields.io/badge/-change%20log-purple
+   :alt: Change log
 .. _changelog-badge: https://github.com/akaihola/darker/blob/master/CHANGES.rst
+.. |next-milestone| image:: https://img.shields.io/github/milestones/progress/akaihola/darker/6?color=red&label=bugfix%20release%201.2.2
+   :alt: Next milestone
+.. _next-milestone: https://github.com/akaihola/darker/milestone/6
+
 
 What?
 =====
@@ -39,6 +49,16 @@ The reformatters and linters supported are:
 .. _Mypy: https://pypi.org/project/mypy
 .. _Pylint: https://pypi.org/project/pylint
 .. _Flake8: https://pypi.org/project/flake8
+
+.. sidebar:: |you-can-help|
+
+   | We're asking the community kindly for help to review pull requests for
+   | |next-milestone|_
+   | If you have a moment to spare, please take a look at one of them
+     and shoot us a comment!
+
+.. |you-can-help| image:: https://img.shields.io/badge/-You%20can%20help-green?style=for-the-badge
+   :alt: You can help
 
 Why?
 ====
