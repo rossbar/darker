@@ -69,6 +69,10 @@ class GitRepoFixture:
             self._run("commit", "-m", commit)
         return absolute_paths
 
+    def create_tag(self, tag_name: str) -> None:
+        """Create a tag at current HEAD"""
+        self._run("tag", tag_name)
+
     def get_hash(self) -> str:
         """Return the commit hash at HEAD in the Git repository"""
         return _git_check_output_lines(["git", "rev-parse", "HEAD"], Path(self.root))[0]
