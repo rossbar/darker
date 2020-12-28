@@ -28,25 +28,28 @@ def test_parse_linter_line(git_repo, monkeypatch, line, expect):
 
 
 @pytest.mark.parametrize(
-    "_descr, paths, location, expect",
+    "_descr, paths, location, expect_output, expect_log",
     [
-        ("No files to check, no output", [], "test.py:1:", []),
+        ("No files to check, no output", [], "test.py:1:", [], []),
         (
             "Check one file, report on a modified line in test.py",
             ["one.py"],
             "test.py:1:",
             ["test.py:1: {git_repo.root}/one.py"],
+            [],
         ),
         (
             "Check one file, report on a column of a modified line in test.py",
             ["one.py"],
             "test.py:1:42:",
             ["test.py:1:42: {git_repo.root}/one.py"],
+            [],
         ),
         (
             "No output if report is on an unmodified line in test.py",
             ["one.py"],
             "test.py:2:42:",
+            [],
             [],
         ),
         (
@@ -54,23 +57,27 @@ def test_parse_linter_line(git_repo, monkeypatch, line, expect):
             ["one.py"],
             "test.py:2:42:",
             [],
+            [],
         ),
         (
             "Check two files, rpeort on a modified line in test.py",
             ["one.py", "two.py"],
             "test.py:1:",
             ["test.py:1: {git_repo.root}/one.py {git_repo.root}/two.py"],
+            [],
         ),
         (
             "Check two files, rpeort on a column of a modified line in test.py",
             ["one.py", "two.py"],
             "test.py:1:42:",
             ["test.py:1:42: {git_repo.root}/one.py {git_repo.root}/two.py"],
+            [],
         ),
         (
             "No output if 2-file report is on an unmodified line in test.py",
             ["one.py", "two.py"],
             "test.py:2:",
+            [],
             [],
         ),
         (
@@ -78,10 +85,20 @@ def test_parse_linter_line(git_repo, monkeypatch, line, expect):
             ["one.py", "two.py"],
             "test.py:2:42:",
             [],
+            [],
+        ),
+        (
+            "Warning for a file missing from the working tree",
+            ["missing.py"],
+            "missing.py:1:",
+            [],
+            ["WARNING Missing file missing.py from echo missing.py:1:"],
         ),
     ],
 )
-def test_run_linter(git_repo, monkeypatch, capsys, _descr, paths, location, expect):
+def test_run_linter(
+    git_repo, capsys, caplog, _descr, paths, location, expect_output, expect_log
+):
     """Linter gets correct paths on command line and outputs just changed lines
 
     We use ``echo`` as our "linter". It just adds the paths of each file to lint as an
@@ -97,7 +114,6 @@ def test_run_linter(git_repo, monkeypatch, capsys, _descr, paths, location, expe
     """
     src_paths = git_repo.add({"test.py": "1\n2\n"}, commit="Initial commit")
     src_paths["test.py"].write("one\n2\n")
-    monkeypatch.chdir(git_repo.root)
     cmdline = f"echo {location}"
 
     run_linter(
@@ -107,5 +123,28 @@ def test_run_linter(git_repo, monkeypatch, capsys, _descr, paths, location, expe
     # We can now verify that the linter received the correct paths on its command line
     # by checking standard output from the our `echo` "linter".
     # The test cases also verify that only linter reports on modified lines are output.
-    result = capsys.readouterr().out.splitlines()
-    assert result == [line.format(git_repo=git_repo) for line in expect]
+    output = capsys.readouterr().out.splitlines()
+    assert output == [line.format(git_repo=git_repo) for line in expect_output]
+    logs = [f"{record.levelname} {record.message}" for record in caplog.records]
+    assert logs == expect_log
+
+
+def test_run_linter_on_new_file(git_repo, capsys):
+    """``run_linter()`` considers file missing from history as empty
+
+    Passes through all linter errors as if the original file was empty.
+
+    """
+    git_repo.add({"file1.py": "1\n"}, commit="Initial commit")
+    git_repo.create_tag("initial")
+    (git_repo.root / "file2.py").write("1\n2\n")
+
+    run_linter(
+        "echo file2.py:1:",
+        Path(git_repo.root),
+        {Path("file2.py")},
+        RevisionRange("initial"),
+    )
+
+    output = capsys.readouterr().out.splitlines()
+    assert output == [f"file2.py:1: {git_repo.root}/file2.py"]
