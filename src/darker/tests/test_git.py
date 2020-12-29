@@ -10,13 +10,6 @@ from unittest.mock import patch
 import pytest
 
 from darker import git
-from darker.git import (
-    EditedLinenumsDiffer,
-    RevisionRange,
-    git_get_content_at_revision,
-    git_get_modified_files,
-    should_reformat_file,
-)
 from darker.tests.conftest import GitRepoFixture
 from darker.tests.helpers import raises_if_exception
 from darker.utils import GIT_DATEFORMAT, TextDocument
@@ -48,7 +41,7 @@ def test_git_get_content_at_revision(git_repo, revision, expect_content, expect_
     paths = git_repo.add({"my.txt": "modified content"}, commit="Initial commit")
     paths["my.txt"].write("new content")
 
-    original = git_get_content_at_revision(
+    original = git.git_get_content_at_revision(
         Path("my.txt"), revision, cwd=Path(git_repo.root)
     )
 
@@ -92,7 +85,7 @@ def test_git_get_content_at_revision_git_calls(revision, expect):
     """get_git_content_at_revision() calls Git correctly"""
     with patch("darker.git.check_output") as check_output:
 
-        git_get_content_at_revision(Path("my.txt"), revision, Path("cwd"))
+        git.git_get_content_at_revision(Path("my.txt"), revision, Path("cwd"))
 
         assert check_output.call_count == len(expect)
         for expect_call in expect:
@@ -120,7 +113,7 @@ def test_should_reformat_file(tmpdir, path, create, expect):
     if create:
         (tmpdir / path).ensure()
 
-    result = should_reformat_file(Path(tmpdir / path))
+    result = git.should_reformat_file(Path(tmpdir / path))
 
     assert result == expect
 
@@ -161,8 +154,8 @@ def test_git_get_modified_files(git_repo, modify_paths, paths, expect):
         else:
             absolute_path.write(content, ensure=True)
 
-    result = git_get_modified_files(
-        {root / p for p in paths}, RevisionRange("HEAD"), cwd=root
+    result = git.git_get_modified_files(
+        {root / p for p in paths}, git.RevisionRange("HEAD"), cwd=root
     )
 
     assert {str(p) for p in result} == set(expect)
@@ -313,9 +306,9 @@ def test_git_get_modified_files_revision_range(
     _description, branched_repo, revrange, expect
 ):
     """Test for :func:`darker.git.git_get_modified_files` with a revision range"""
-    result = git_get_modified_files(
+    result = git.git_get_modified_files(
         [Path(branched_repo.root)],
-        RevisionRange.parse(revrange),
+        git.RevisionRange.parse(revrange),
         Path(branched_repo.root),
     )
 
@@ -335,7 +328,7 @@ def test_revisionrange_parse_pre_commit(environ, expect):
     """RevisionRange.parse(':PRE-COMMIT:') gets the range from environment variables"""
     with patch.dict(os.environ, environ), raises_if_exception(expect):
 
-        result = RevisionRange.parse(":PRE-COMMIT:")
+        result = git.RevisionRange.parse(":PRE-COMMIT:")
 
         expect_rev1, expect_rev2 = expect
         assert result.rev1 == expect_rev1
@@ -359,7 +352,7 @@ def test_edited_linenums_differ_compare_revisions(git_repo, context_lines, expec
     """Tests for EditedLinenumsDiffer.revision_vs_worktree()"""
     paths = git_repo.add({"a.py": "1\n2\n3\n4\n5\n6\n7\n8\n"}, commit="Initial commit")
     paths["a.py"].write("1\n2\nthree\n4\n5\n6\nseven\n8\n")
-    differ = EditedLinenumsDiffer(Path(git_repo.root), RevisionRange("HEAD"))
+    differ = git.EditedLinenumsDiffer(Path(git_repo.root), git.RevisionRange("HEAD"))
 
     linenums = differ.compare_revisions(Path("a.py"), context_lines)
 
@@ -371,7 +364,7 @@ def test_edited_linenums_differ_revision_vs_lines(git_repo, context_lines, expec
     """Tests for EditedLinenumsDiffer.revision_vs_lines()"""
     git_repo.add({'a.py': '1\n2\n3\n4\n5\n6\n7\n8\n'}, commit='Initial commit')
     content = TextDocument.from_lines(["1", "2", "three", "4", "5", "6", "seven", "8"])
-    differ = EditedLinenumsDiffer(git_repo.root, RevisionRange("HEAD"))
+    differ = git.EditedLinenumsDiffer(git_repo.root, git.RevisionRange("HEAD"))
 
     linenums = differ.revision_vs_lines(Path("a.py"), content, context_lines)
 
