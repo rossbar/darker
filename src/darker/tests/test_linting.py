@@ -3,6 +3,7 @@
 """Unit tests for :mod:`darker.linting`"""
 
 from pathlib import Path
+from textwrap import dedent
 
 import pytest
 
@@ -109,3 +110,38 @@ def test_run_linter(git_repo, monkeypatch, capsys, _descr, paths, location, expe
     # The test cases also verify that only linter reports on modified lines are output.
     result = capsys.readouterr().out.splitlines()
     assert result == [line.format(git_repo=git_repo) for line in expect]
+
+
+def test_run_linter_line_separation(git_repo, capsys):
+    """``run_linter`` separates contiguous blocks of linter output with empty lines"""
+    paths = git_repo.add({"a.py": "1\n2\n3\n4\n5\n6\n"}, commit="Initial commit")
+    paths["a.py"].write("a\nb\nc\nd\ne\nf\n")
+    linter_output = git_repo.root / "dummy-linter-output.txt"
+    linter_output.write(
+        dedent(
+            """
+            a.py:2: first block
+            a.py:3: of linter output
+            a.py:5: second block
+            a.py:6: of linter output
+            """
+        )
+    )
+
+    run_linter(
+        f"cat {linter_output}",
+        Path(git_repo.root),
+        {Path(p) for p in paths},
+        RevisionRange("HEAD"),
+    )
+
+    result = capsys.readouterr().out
+    assert result == dedent(
+        """
+        a.py:2: first block
+        a.py:3: of linter output
+
+        a.py:5: second block
+        a.py:6: of linter output
+        """
+    )
