@@ -20,14 +20,11 @@ from darker.tests.helpers import raises_if_exception
 from darker.utils import TextDocument
 
 
-@pytest.mark.parametrize(
-    "revision, expect",
-    [
-        (":WORKTREE:", ("new content",)),
-        ("HEAD", ("modified content",)),
-        ("HEAD^", ("original content",)),
-        ("HEAD~2", ()),
-    ],
+@pytest.mark.kwparametrize(
+    dict(revision=":WORKTREE:", expect=("new content",)),
+    dict(revision="HEAD", expect=("modified content",)),
+    dict(revision="HEAD^", expect=("original content",)),
+    dict(revision="HEAD~2", expect=()),
 )
 def test_git_get_content_at_revision(git_repo, revision, expect):
     """darker.git.git_get_content_at_revision()"""
@@ -42,12 +39,9 @@ def test_git_get_content_at_revision(git_repo, revision, expect):
     assert original.lines == expect
 
 
-@pytest.mark.parametrize(
-    "revision, expect",
-    [
-        ("HEAD^", "git show HEAD^:./my.txt"),
-        ("master", "git show master:./my.txt"),
-    ],
+@pytest.mark.kwparametrize(
+    dict(revision="HEAD^", expect="git show HEAD^:./my.txt"),
+    dict(revision="master", expect="git show master:./my.txt"),
 )
 def test_git_get_content_at_revision_git_calls(revision, expect):
     with patch("darker.git.check_output") as check_output:
@@ -59,20 +53,17 @@ def test_git_get_content_at_revision_git_calls(revision, expect):
         )
 
 
-@pytest.mark.parametrize(
-    'path, create, expect',
-    [
-        ('.', False, False),
-        ('main', True, False),
-        ('main.c', True, False),
-        ('main.py', True, True),
-        ('main.py', False, False),
-        ('main.pyx', True, False),
-        ('main.pyi', True, False),
-        ('main.pyc', True, False),
-        ('main.pyo', True, False),
-        ('main.js', True, False),
-    ],
+@pytest.mark.kwparametrize(
+    dict(path=".", create=False, expect=False),
+    dict(path="main", create=True, expect=False),
+    dict(path="main.c", create=True, expect=False),
+    dict(path="main.py", create=True, expect=True),
+    dict(path="main.py", create=False, expect=False),
+    dict(path="main.pyx", create=True, expect=False),
+    dict(path="main.pyi", create=True, expect=False),
+    dict(path="main.pyc", create=True, expect=False),
+    dict(path="main.pyo", create=True, expect=False),
+    dict(path="main.js", create=True, expect=False),
 )
 def test_should_reformat_file(tmpdir, path, create, expect):
     if create:
@@ -83,32 +74,33 @@ def test_should_reformat_file(tmpdir, path, create, expect):
     assert result == expect
 
 
-@pytest.mark.parametrize(
-    'modify_paths, paths, expect',
-    [
-        ({}, ['a.py'], []),
-        ({}, [], []),
-        ({'a.py': 'new'}, [], ['a.py']),
-        ({'a.py': 'new'}, ['b.py'], []),
-        ({'a.py': 'new'}, ['a.py', 'b.py'], ['a.py']),
-        ({'c/d.py': 'new'}, ['c/d.py', 'd/f/g.py'], ['c/d.py']),
-        ({'c/e.js': 'new'}, ['c/e.js'], []),
-        ({'a.py': 'original'}, ['a.py'], []),
-        ({'a.py': None}, ['a.py'], []),
-        ({"h.py": "untracked"}, ["h.py"], ["h.py"]),
-        ({}, ["h.py"], []),
-    ],
+@pytest.mark.kwparametrize(
+    dict(paths=["a.py"], expect=[]),
+    dict(expect=[]),
+    dict(modify_paths={"a.py": "new"}, expect=["a.py"]),
+    dict(modify_paths={"a.py": "new"}, paths=["b.py"], expect=[]),
+    dict(modify_paths={"a.py": "new"}, paths=["a.py", "b.py"], expect=["a.py"]),
+    dict(
+        modify_paths={"c/d.py": "new"}, paths=["c/d.py", "d/f/g.py"], expect=["c/d.py"]
+    ),
+    dict(modify_paths={"c/e.js": "new"}, paths=["c/e.js"], expect=[]),
+    dict(modify_paths={"a.py": "original"}, paths=["a.py"], expect=[]),
+    dict(modify_paths={"a.py": None}, paths=["a.py"], expect=[]),
+    dict(modify_paths={"h.py": "untracked"}, paths=["h.py"], expect=["h.py"]),
+    dict(paths=["h.py"], expect=[]),
+    modify_paths={},
+    paths=[],
 )
 def test_git_get_modified_files(git_repo, modify_paths, paths, expect):
     """Tests for `darker.git.git_get_modified_files()`"""
     root = Path(git_repo.root)
     git_repo.add(
         {
-            'a.py': 'original',
-            'b.py': 'original',
-            'c/d.py': 'original',
-            'c/e.js': 'original',
-            'd/f/g.py': 'original',
+            "a.py": "original",
+            "b.py": "original",
+            "c/d.py": "original",
+            "c/e.js": "original",
+            "d/f/g.py": "original",
         },
         commit="Initial commit",
     )
@@ -186,86 +178,87 @@ def branched_repo(tmpdir_factory):
     return git_repo
 
 
-@pytest.mark.parametrize(
-    "_description, revrange, expect",
-    [
-        (
-            "from latest commit in branch to worktree and index",
-            "HEAD",
-            {"add_index.py", "add_worktree.py", "mod_index.py", "mod_worktree.py"},
+@pytest.mark.kwparametrize(
+    dict(
+        _description="from latest commit in branch to worktree and index",
+        revrange="HEAD",
+        expect={"add_index.py", "add_worktree.py", "mod_index.py", "mod_worktree.py"},
+    ),
+    dict(
+        _description="from initial commit to worktree and index on branch (implicit)",
+        revrange="master",
+        expect={
+            "mod_both.py",
+            "mod_same.py",
+            "mod_branch.py",
+            "add_index.py",
+            "mod_index.py",
+            "add_worktree.py",
+            "mod_worktree.py",
+        },
+    ),
+    dict(
+        _description="from initial commit to worktree and index on branch",
+        revrange="master...",
+        expect={
+            "mod_both.py",
+            "mod_same.py",
+            "mod_branch.py",
+            "add_index.py",
+            "mod_index.py",
+            "add_worktree.py",
+            "mod_worktree.py",
+        },
+    ),
+    dict(
+        _description="from master to worktree and index on branch",
+        revrange="master..",
+        expect={
+            "del_master.py",
+            "mod_master.py",
+            "mod_both.py",
+            "mod_branch.py",
+            "add_index.py",
+            "mod_index.py",
+            "add_worktree.py",
+            "mod_worktree.py",
+        },
+    ),
+    dict(
+        _description=(
+            "from master to last commit on branch," " excluding worktree and index"
         ),
-        (
-            "from initial commit to worktree and index on branch (implicit)",
-            "master",
-            {
-                "mod_both.py",
-                "mod_same.py",
-                "mod_branch.py",
-                "add_index.py",
-                "mod_index.py",
-                "add_worktree.py",
-                "mod_worktree.py",
-            },
-        ),
-        (
-            "from initial commit to worktree and index on branch",
-            "master...",
-            {
-                "mod_both.py",
-                "mod_same.py",
-                "mod_branch.py",
-                "add_index.py",
-                "mod_index.py",
-                "add_worktree.py",
-                "mod_worktree.py",
-            },
-        ),
-        (
-            "from master to worktree and index on branch",
-            "master..",
-            {
-                "del_master.py",
-                "mod_master.py",
-                "mod_both.py",
-                "mod_branch.py",
-                "add_index.py",
-                "mod_index.py",
-                "add_worktree.py",
-                "mod_worktree.py",
-            },
-        ),
-        (
-            "from master to last commit on branch, excluding worktree and index",
-            "master..HEAD",
-            {
-                "del_master.py",
-                "mod_master.py",
-                "mod_both.py",
-                "mod_branch.py",
-            },
-        ),
-        (
-            "from master to branch, excluding worktree and index",
-            "master..branch",
-            {
-                "del_master.py",
-                "mod_master.py",
-                "mod_both.py",
-                "mod_branch.py",
-            },
-        ),
-        (
+        revrange="master..HEAD",
+        expect={
+            "del_master.py",
+            "mod_master.py",
+            "mod_both.py",
+            "mod_branch.py",
+        },
+    ),
+    dict(
+        _description="from master to branch, excluding worktree and index",
+        revrange="master..branch",
+        expect={
+            "del_master.py",
+            "mod_master.py",
+            "mod_both.py",
+            "mod_branch.py",
+        },
+    ),
+    dict(
+        _description=(
             "from initial commit to last commit on branch,"
-            " excluding worktree and index",
-            "master...HEAD",
-            {"mod_both.py", "mod_same.py", "mod_branch.py"},
+            " excluding worktree and index"
         ),
-        (
-            "from initial commit to previous commit on branch",
-            "master...branch",
-            {"mod_both.py", "mod_same.py", "mod_branch.py"},
-        ),
-    ],
+        revrange="master...HEAD",
+        expect={"mod_both.py", "mod_same.py", "mod_branch.py"},
+    ),
+    dict(
+        _description="from initial commit to previous commit on branch",
+        revrange="master...branch",
+        expect={"mod_both.py", "mod_same.py", "mod_branch.py"},
+    ),
 )
 def test_git_get_modified_files_revision_range(
     _description, branched_repo, revrange, expect
@@ -280,14 +273,14 @@ def test_git_get_modified_files_revision_range(
     assert {path.name for path in result} == expect
 
 
-@pytest.mark.parametrize(
-    "environ, expect",
-    [
-        ({}, SystemExit),
-        ({"PRE_COMMIT_FROM_REF": "old"}, SystemExit),
-        ({"PRE_COMMIT_TO_REF": "new"}, SystemExit),
-        ({"PRE_COMMIT_FROM_REF": "old", "PRE_COMMIT_TO_REF": "new"}, ["old", "new"]),
-    ],
+@pytest.mark.kwparametrize(
+    dict(environ={}, expect=SystemExit),
+    dict(environ={"PRE_COMMIT_FROM_REF": "old"}, expect=SystemExit),
+    dict(environ={"PRE_COMMIT_TO_REF": "new"}, expect=SystemExit),
+    dict(
+        environ={"PRE_COMMIT_FROM_REF": "old", "PRE_COMMIT_TO_REF": "new"},
+        expect=["old", "new"],
+    ),
 )
 def test_revisionrange_parse_pre_commit(environ, expect):
     """RevisionRange.parse(':PRE-COMMIT:') gets the range from environment variables"""
@@ -301,14 +294,11 @@ def test_revisionrange_parse_pre_commit(environ, expect):
         assert result.use_common_ancestor
 
 
-edited_linenums_differ_cases = pytest.mark.parametrize(
-    "context_lines, expect",
-    [
-        (0, [3, 7]),
-        (1, [2, 3, 4, 6, 7, 8]),
-        (2, [1, 2, 3, 4, 5, 6, 7, 8]),
-        (3, [1, 2, 3, 4, 5, 6, 7, 8]),
-    ],
+edited_linenums_differ_cases = pytest.mark.kwparametrize(
+    dict(context_lines=0, expect=[3, 7]),
+    dict(context_lines=1, expect=[2, 3, 4, 6, 7, 8]),
+    dict(context_lines=2, expect=[1, 2, 3, 4, 5, 6, 7, 8]),
+    dict(context_lines=3, expect=[1, 2, 3, 4, 5, 6, 7, 8]),
 )
 
 
@@ -327,7 +317,7 @@ def test_edited_linenums_differ_revision_vs_worktree(git_repo, context_lines, ex
 @edited_linenums_differ_cases
 def test_edited_linenums_differ_revision_vs_lines(git_repo, context_lines, expect):
     """Tests for EditedLinenumsDiffer.revision_vs_lines()"""
-    git_repo.add({'a.py': '1\n2\n3\n4\n5\n6\n7\n8\n'}, commit='Initial commit')
+    git_repo.add({"a.py": "1\n2\n3\n4\n5\n6\n7\n8\n"}, commit="Initial commit")
     content = TextDocument.from_lines(["1", "2", "three", "4", "5", "6", "seven", "8"])
     differ = EditedLinenumsDiffer(git_repo.root, RevisionRange("HEAD"))
 

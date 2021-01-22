@@ -70,61 +70,59 @@ def test_get_path_ancestry_for_file(tmpdir):
     assert result[-2] == tmpdir.parent
 
 
-@pytest.mark.parametrize(
-    "document1, document2, expect",
-    [
-        (TextDocument(lines=["foo"]), TextDocument(lines=[]), False),
-        (TextDocument(lines=[]), TextDocument(lines=["foo"]), False),
-        (TextDocument(lines=["foo"]), TextDocument(lines=["bar"]), False),
-        (
-            TextDocument(lines=["line1", "line2"]),
-            TextDocument(lines=["line1", "line2"]),
-            True,
-        ),
-        (TextDocument(lines=["foo"]), TextDocument(""), False),
-        (TextDocument(lines=[]), TextDocument("foo\n"), False),
-        (TextDocument(lines=["foo"]), TextDocument("bar\n"), False),
-        (
-            TextDocument(lines=["line1", "line2"]),
-            TextDocument("line1\nline2\n"),
-            True,
-        ),
-        (TextDocument("foo\n"), TextDocument(lines=[]), False),
-        (TextDocument(""), TextDocument(lines=["foo"]), False),
-        (TextDocument("foo\n"), TextDocument(lines=["bar"]), False),
-        (
-            TextDocument("line1\nline2\n"),
-            TextDocument(lines=["line1", "line2"]),
-            True,
-        ),
-        (TextDocument("foo\n"), TextDocument(""), False),
-        (TextDocument(""), TextDocument("foo\n"), False),
-        (TextDocument("foo\n"), TextDocument("bar\n"), False),
-        (
-            TextDocument("line1\nline2\n"),
-            TextDocument("line1\nline2\n"),
-            True,
-        ),
-        (TextDocument("foo"), "line1\nline2\n", NotImplemented),
-    ],
+@pytest.mark.kwparametrize(
+    dict(doc1=TextDocument(lines=["foo"]), doc2=TextDocument(lines=[]), expect=False),
+    dict(doc1=TextDocument(lines=[]), doc2=TextDocument(lines=["foo"]), expect=False),
+    dict(
+        doc1=TextDocument(lines=["foo"]), doc2=TextDocument(lines=["bar"]), expect=False
+    ),
+    dict(
+        doc1=TextDocument(lines=["line1", "line2"]),
+        doc2=TextDocument(lines=["line1", "line2"]),
+        expect=True,
+    ),
+    dict(doc1=TextDocument(lines=["foo"]), doc2=TextDocument(""), expect=False),
+    dict(doc1=TextDocument(lines=[]), doc2=TextDocument("foo\n"), expect=False),
+    dict(doc1=TextDocument(lines=["foo"]), doc2=TextDocument("bar\n"), expect=False),
+    dict(
+        doc1=TextDocument(lines=["line1", "line2"]),
+        doc2=TextDocument("line1\nline2\n"),
+        expect=True,
+    ),
+    dict(doc1=TextDocument("foo\n"), doc2=TextDocument(lines=[]), expect=False),
+    dict(doc1=TextDocument(""), doc2=TextDocument(lines=["foo"]), expect=False),
+    dict(doc1=TextDocument("foo\n"), doc2=TextDocument(lines=["bar"]), expect=False),
+    dict(
+        doc1=TextDocument("line1\nline2\n"),
+        doc2=TextDocument(lines=["line1", "line2"]),
+        expect=True,
+    ),
+    dict(doc1=TextDocument("foo\n"), doc2=TextDocument(""), expect=False),
+    dict(doc1=TextDocument(""), doc2=TextDocument("foo\n"), expect=False),
+    dict(doc1=TextDocument("foo\n"), doc2=TextDocument("bar\n"), expect=False),
+    dict(
+        doc1=TextDocument("line1\nline2\n"),
+        doc2=TextDocument("line1\nline2\n"),
+        expect=True,
+    ),
+    dict(doc1=TextDocument("foo"), doc2="line1\nline2\n", expect=NotImplemented),
 )
-def test_textdocument_eq(document1, document2, expect):
+def test_textdocument_eq(doc1, doc2, expect):
     """TextDocument.__eq__()"""
-    result = document1.__eq__(document2)
+    result = doc1.__eq__(doc2)
 
     assert result == expect
 
 
-@pytest.mark.parametrize(
-    "document, expect",
-    [
-        (TextDocument(""), "TextDocument([0 lines])"),
-        (TextDocument(lines=[]), "TextDocument([0 lines])"),
-        (TextDocument("One line\n"), "TextDocument([1 lines])"),
-        (TextDocument(lines=["One line"]), "TextDocument([1 lines])"),
-        (TextDocument("Two\nlines\n"), "TextDocument([2 lines])"),
-        (TextDocument(lines=["Two", "lines"]), "TextDocument([2 lines])"),
-    ],
+@pytest.mark.kwparametrize(
+    dict(document=TextDocument(""), expect="TextDocument([0 lines])"),
+    dict(document=TextDocument(lines=[]), expect="TextDocument([0 lines])"),
+    dict(document=TextDocument("One line\n"), expect="TextDocument([1 lines])"),
+    dict(document=TextDocument(lines=["One line"]), expect="TextDocument([1 lines])"),
+    dict(document=TextDocument("Two\nlines\n"), expect="TextDocument([2 lines])"),
+    dict(
+        document=TextDocument(lines=["Two", "lines"]), expect="TextDocument([2 lines])"
+    ),
 )
 def test_textdocument_repr(document, expect):
     """TextDocument.__repr__()"""
@@ -133,13 +131,10 @@ def test_textdocument_repr(document, expect):
     assert result == expect
 
 
-@pytest.mark.parametrize(
-    "document, expect",
-    [
-        (TextDocument(), ""),
-        (TextDocument(mtime=""), ""),
-        (TextDocument(mtime="dummy mtime"), "dummy mtime"),
-    ],
+@pytest.mark.kwparametrize(
+    dict(document=TextDocument(), expect=""),
+    dict(document=TextDocument(mtime=""), expect=""),
+    dict(document=TextDocument(mtime="dummy mtime"), expect="dummy mtime"),
 )
 def test_textdocument_mtime(document, expect):
     """TextDocument.mtime"""
