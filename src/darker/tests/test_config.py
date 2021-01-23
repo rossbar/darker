@@ -173,6 +173,7 @@ def test_load_config(
     ),
 )
 def test_get_effective_config(args, expect):
+    """get_effective_config() resolves effective configuration correctly"""
     result = get_effective_config(args)
 
     assert result == expect
@@ -250,6 +251,7 @@ def test_get_modified_config(args, expect):
     ),
 )
 def test_dump_config(config, expect):
+    """dump_config() outputs configuration correctly in the TOML format"""
     result = dump_config(config)
 
     assert result == expect

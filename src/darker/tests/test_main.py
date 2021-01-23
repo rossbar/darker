@@ -121,6 +121,7 @@ A_PY_DIFF_BLACK_ISORT = [
     ),
 )
 def test_format_edited_parts(git_repo, monkeypatch, enable_isort, black_args, expect):
+    """format_edited_parts() modifies files correctly depending on options"""
     monkeypatch.chdir(git_repo.root)
     paths = git_repo.add({"a.py": "\n", "b.py": "\n"}, commit="Initial commit")
     paths["a.py"].write("\n".join(A_PY))

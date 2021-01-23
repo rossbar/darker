@@ -1,3 +1,7 @@
+# pylint: disable=too-many-arguments
+
+"""Unit tests for mod:`darker.command_line` and mod:`darker.__main__`"""
+
 import re
 from pathlib import Path
 from textwrap import dedent
@@ -258,6 +262,7 @@ def test_parse_command_line_config_src(
 def test_parse_command_line(
     tmpdir, monkeypatch, argv, expect_value, expect_config, expect_modified
 ):
+    """parse_command_line() parses options correctly"""
     monkeypatch.chdir(tmpdir)
     args, effective_cfg, modified_cfg = parse_command_line(argv)
 
@@ -329,6 +334,7 @@ def test_help_with_isort_package(with_isort, darker_help_output):
     ),
 )
 def test_black_options(monkeypatch, tmpdir, git_repo, options, expect):
+    """Black options are passed correctly to Black when reformatting code"""
     monkeypatch.chdir(tmpdir)
     (tmpdir / "pyproject.toml").write("[tool.black]\n")
     (tmpdir / "black.cfg").write(
@@ -344,12 +350,12 @@ def test_black_options(monkeypatch, tmpdir, git_repo, options, expect):
         {"main.py": 'print("Hello World!")\n'}, commit="Initial commit"
     )
     added_files["main.py"].write('print ("Hello World!")\n')
-    with patch.object(black_diff, "Mode", wraps=black_diff.Mode) as Mode:
+    with patch.object(black_diff, "Mode", wraps=black_diff.Mode) as file_mode_class:
 
         main(options + [str(path) for path in added_files.values()])
 
     _, expect_args, expect_kwargs = expect
-    Mode.assert_called_once_with(*expect_args, **expect_kwargs)
+    file_mode_class.assert_called_once_with(*expect_args, **expect_kwargs)
 
 
 @pytest.mark.kwparametrize(
